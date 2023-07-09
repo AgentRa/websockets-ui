@@ -1,32 +1,60 @@
-import { Player, RegistrationDataResponse } from "../types";
+import {
+  Player,
+  RegistrationDataRequest,
+  RegistrationDataResponse,
+  Room,
+  Winner,
+} from "../types";
 
 class Store {
-  public _players: Player[];
+  private readonly _players: Player[];
+  private readonly _rooms: Room[];
+  private readonly _winners: Winner[];
 
   constructor() {
     this._players = [];
+    this._rooms = [];
+    this._winners = [];
   }
 
-  registerPlayer(player: Player): RegistrationDataResponse {
-    const isPlayerExist = this._players.find(
-      (p) => p.name === player.name && p.password === player.password
-    );
+  registerPlayer(
+    player: RegistrationDataRequest,
+    index: number
+  ): RegistrationDataResponse {
+    const isPlayerExist = this.players.find((p) => p.name === player.name);
     if (isPlayerExist) {
       return {
         name: player.name,
-        password: player.password,
+        index: index,
         error: true,
-        errorText: "Player already exist",
+        errorText: "Player already exist, pick another name",
       };
     } else {
-      this._players.push(player);
+      this._players.push({ name: player.name, index: index });
       return {
         name: player.name,
-        password: player.password,
+        index: index,
         error: false,
         errorText: "",
       };
     }
+  }
+
+  createRoom() {
+    console.log("createRoom");
+    return "createRoom";
+  }
+
+  get players(): Player[] {
+    return this._players;
+  }
+
+  get rooms(): Room[] {
+    return this._rooms;
+  }
+
+  get winners(): Winner[] {
+    return this._winners;
   }
 }
 
