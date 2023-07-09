@@ -7,7 +7,7 @@ export function messageCreator(
   dataList: DataItem[] | DataItem
 ): string[] | string {
   if (Array.isArray(dataList)) {
-    return dataList.map((type, data) =>
+    return dataList.map(({ type, data }) =>
       JSON.stringify({ type, data: JSON.stringify(data), id: 0 })
     );
   }

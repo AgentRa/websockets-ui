@@ -6,6 +6,8 @@ export type WebSocketMessageRequest = {
   id: number;
 };
 
+export type DataRequest = RegistrationDataRequest | CreateRoomRequest;
+
 export type RegistrationDataRequest = {
   name: string;
   password: string;

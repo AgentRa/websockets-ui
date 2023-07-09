@@ -2,19 +2,20 @@ import { RawData, WebSocketServer } from "ws";
 import {
   WebSocketMessageRequest,
   isErrorType,
-  WebSocketDataRequest,
   WebSocketMessageType,
   RegistrationDataRequest,
   WebSocketConnection,
   WebSocketDataResponse,
+  DataRequest,
 } from "../types";
 import { store } from "../store/store";
 import { messageCreator } from "../utils";
 
 export const wsServer = new WebSocketServer({ port: 3000 });
 const connections: WebSocketConnection[] = [];
-const responseForAll = (messages: string[]) =>
+const responseForAll = (messages: string[]) => {
   connections.map((socket) => messages.map((message) => socket.send(message)));
+};
 
 wsServer.on("connection", (ws: WebSocketConnection) => {
   ws.index = connections.length;
@@ -36,8 +37,9 @@ const handle = (
   ws: WebSocketConnection
 ): void => {
   const { type, data: payload } = data;
-  const request: WebSocketDataRequest = JSON.parse(payload);
+  const request: DataRequest = payload.length ? JSON.parse(payload) : payload;
   let response: WebSocketDataResponse;
+
   switch (type) {
     case WebSocketMessageType.REGISTRATION:
       response = store.registerPlayer(
@@ -59,7 +61,15 @@ const handle = (
       );
       break;
     case WebSocketMessageType.CREATE_ROOM:
-      response = JSON.stringify(store.createRoom());
+      store.createRoom({ name: ws.username, index: ws.index });
+      responseForAll(
+        messageCreator([
+          {
+            type: WebSocketMessageType.UPDATE_ROOM,
+            data: store.rooms,
+          },
+        ])
+      );
       break;
     // case WebSocketMessageType.UPDATE_WINNERS:
     //   break;

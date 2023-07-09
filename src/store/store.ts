@@ -40,9 +40,11 @@ class Store {
     }
   }
 
-  createRoom() {
-    console.log("createRoom");
-    return "createRoom";
+  createRoom({ name, index }: Player): void {
+    this._rooms.push({
+      roomId: this._rooms.length,
+      roomUsers: [{ name, index }],
+    });
   }
 
   get players(): Player[] {
