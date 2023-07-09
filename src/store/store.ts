@@ -1,10 +1,4 @@
-import {
-  Player,
-  RegistrationDataRequest,
-  RegistrationDataResponse,
-  Room,
-  Winner,
-} from "../types";
+import { Player, RegistrationDataResponse, Room, Winner } from "../types";
 
 class Store {
   private readonly _players: Player[];
@@ -17,23 +11,20 @@ class Store {
     this._winners = [];
   }
 
-  registerPlayer(
-    player: RegistrationDataRequest,
-    index: number
-  ): RegistrationDataResponse {
-    const isPlayerExist = this.players.find((p) => p.name === player.name);
+  registerPlayer(name: string, index: number): RegistrationDataResponse {
+    const isPlayerExist = this.players.find((p) => p.name === name);
     if (isPlayerExist) {
       return {
-        name: player.name,
-        index: index,
+        name,
+        index,
         error: true,
         errorText: "Player already exist, pick another name",
       };
     } else {
-      this._players.push({ name: player.name, index: index });
+      this._players.push({ name, index });
       return {
-        name: player.name,
-        index: index,
+        name,
+        index,
         error: false,
         errorText: "",
       };
@@ -47,12 +38,17 @@ class Store {
     });
   }
 
+  joinRoom({ name, index }: Player, roomId: number): void {
+    const room = this._rooms.find((r) => r.roomId === roomId);
+    if (room) room.roomUsers.push({ name, index });
+  }
+
   get players(): Player[] {
     return this._players;
   }
 
   get rooms(): Room[] {
-    return this._rooms;
+    return this._rooms.filter((room) => room.roomUsers.length === 1);
   }
 
   get winners(): Winner[] {

@@ -7,6 +7,7 @@ import {
   WebSocketConnection,
   WebSocketDataResponse,
   DataRequest,
+  AddUserToRoomRequest,
 } from "../types";
 import { store } from "../store/store";
 import { messageCreator } from "../utils";
@@ -43,10 +44,10 @@ const handle = (
   switch (type) {
     case WebSocketMessageType.REGISTRATION:
       response = store.registerPlayer(
-        request as RegistrationDataRequest,
+        (request as RegistrationDataRequest).name,
         ws.index
       );
-      ws.username = response.name;
+      ws.name = response.name;
       ws.send(
         messageCreator({
           type: WebSocketMessageType.REGISTRATION,
@@ -61,7 +62,21 @@ const handle = (
       );
       break;
     case WebSocketMessageType.CREATE_ROOM:
-      store.createRoom({ name: ws.username, index: ws.index });
+      store.createRoom({ name: ws.name, index: ws.index });
+      responseForAll(
+        messageCreator([
+          {
+            type: WebSocketMessageType.UPDATE_ROOM,
+            data: store.rooms,
+          },
+        ])
+      );
+      break;
+    case WebSocketMessageType.ADD_USER_TO_ROOM:
+      store.joinRoom(
+        { name: ws.name, index: ws.index },
+        (request as AddUserToRoomRequest).indexRoom
+      );
       responseForAll(
         messageCreator([
           {
@@ -73,8 +88,7 @@ const handle = (
       break;
     // case WebSocketMessageType.UPDATE_WINNERS:
     //   break;
-    // case WebSocketMessageType.ADD_USER_TO_ROOM:
-    //   break;
+
     // case WebSocketMessageType.CREATE_GAME:
     //   break;
     // case WebSocketMessageType.UPDATE_ROOM:

@@ -6,11 +6,18 @@ export type WebSocketMessageRequest = {
   id: number;
 };
 
-export type DataRequest = RegistrationDataRequest | CreateRoomRequest;
+export type DataRequest =
+  | RegistrationDataRequest
+  | CreateRoomRequest
+  | AddUserToRoomRequest;
 
 export type RegistrationDataRequest = {
   name: string;
   password: string;
+};
+
+export type AddUserToRoomRequest = {
+  indexRoom: number;
 };
 
 export type DataItem = {
@@ -83,5 +90,5 @@ export type Players = Player[];
 export type Rooms = Room[];
 export type WebSocketConnection = {
   index: number;
-  username: string;
+  name: string;
 } & WebSocket;
