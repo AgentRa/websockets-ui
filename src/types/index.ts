@@ -9,7 +9,8 @@ export type WebSocketMessageRequest = {
 export type DataRequest =
   | RegistrationDataRequest
   | CreateRoomRequest
-  | AddUserToRoomRequest;
+  | AddUserToRoomRequest
+  | AddShipsRequest;
 
 export type RegistrationDataRequest = {
   name: string;
@@ -18,6 +19,12 @@ export type RegistrationDataRequest = {
 
 export type AddUserToRoomRequest = {
   indexRoom: number;
+};
+
+export type AddShipsRequest = {
+  gameId: number;
+  ships: Ship[];
+  indexPlayer: number;
 };
 
 export type DataItem = {
@@ -33,11 +40,17 @@ export type RegistrationDataResponse = {
   error: boolean;
   errorText: string;
 };
-
 export type CreateRoomDataResponse = string;
-
 export type UpdateRoomDataResponse = Room[];
 export type UpdateWinnersDataResponse = Winner[];
+export type CreateGameDataResponse = {
+  idGame: number;
+  idPlayer: number;
+};
+export type StartGameDataResponse = {
+  currentPlayerIndex: number;
+  ships: Ship[];
+};
 
 // type AddUserToRoomRequestString = {
 //   indexRoom: number;
@@ -50,7 +63,9 @@ export type WebSocketDataResponse =
   | RegistrationDataResponse
   | CreateRoomDataResponse
   | UpdateRoomDataResponse
-  | UpdateWinnersDataResponse;
+  | UpdateWinnersDataResponse
+  | CreateGameDataResponse
+  | StartGameDataResponse;
 
 //Type guard
 export const isErrorType = (error: unknown): error is Error =>
@@ -84,6 +99,27 @@ export type Room = {
 export type Winner = {
   name: string;
   wins: number;
+};
+
+export type Game = {
+  gameId: number;
+  boards: Board[];
+  isAllShipsAdded: [boolean, boolean];
+};
+
+export type Board = {
+  indexPlayer: number;
+  ships: Ship[];
+};
+
+export type Ship = {
+  position: {
+    x: number;
+    y: number;
+  };
+  direction: boolean;
+  length: number;
+  type: "small" | "medium" | "large" | "huge";
 };
 
 export type Players = Player[];

@@ -1,14 +1,23 @@
-import { Player, RegistrationDataResponse, Room, Winner } from "../types";
+import {
+  Board,
+  Game,
+  Player,
+  RegistrationDataResponse,
+  Room,
+  Winner,
+} from "../types";
 
 class Store {
   private readonly _players: Player[];
   private readonly _rooms: Room[];
   private readonly _winners: Winner[];
+  private readonly _games: Game[];
 
   constructor() {
     this._players = [];
     this._rooms = [];
     this._winners = [];
+    this._games = [];
   }
 
   registerPlayer(name: string, index: number): RegistrationDataResponse {
@@ -32,15 +41,44 @@ class Store {
   }
 
   createRoom({ name, index }: Player): void {
+    const isAlreadyIn = this.roomById(index)?.roomUsers.find(
+      (p) => p.name === name
+    );
+    if (isAlreadyIn) throw new Error("Player already in room");
+
     this._rooms.push({
-      roomId: this._rooms.length,
+      roomId: index,
       roomUsers: [{ name, index }],
     });
   }
 
   joinRoom({ name, index }: Player, roomId: number): void {
     const room = this._rooms.find((r) => r.roomId === roomId);
-    if (room) room.roomUsers.push({ name, index });
+    if (!room) throw new Error("Room not found");
+
+    const isAlreadyIn = room.roomUsers.find((p) => p.name === name);
+    if (isAlreadyIn) throw new Error("Player already in room");
+
+    room.roomUsers.push({ name, index });
+  }
+
+  createGame(roomId: number): Game {
+    const room = this._rooms.find((r) => r.roomId === roomId);
+
+    if (!room) throw new Error("Room not found");
+
+    this._games.push({
+      gameId: roomId,
+      boards: room.roomUsers.map(
+        ({ index }: Player): Board => ({
+          indexPlayer: index,
+          ships: [],
+        })
+      ),
+      isAllShipsAdded: [false, false],
+    });
+
+    return this._games[this._games.length - 1];
   }
 
   get players(): Player[] {
@@ -48,6 +86,18 @@ class Store {
   }
 
   get rooms(): Room[] {
+    return this._rooms;
+  }
+
+  get roomById(): (roomId: number) => Room | undefined {
+    return (roomId: number) => this._rooms.find((r) => r.roomId === roomId);
+  }
+
+  get gameById(): (gameId: number) => Game | undefined {
+    return (gameId: number) => this._games.find((g) => g.gameId === gameId);
+  }
+
+  get availableRooms(): Room[] {
     return this._rooms.filter((room) => room.roomUsers.length === 1);
   }
 
