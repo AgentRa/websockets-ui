@@ -10,7 +10,8 @@ export type DataRequest =
   | RegistrationDataRequest
   | CreateRoomRequest
   | AddUserToRoomRequest
-  | AddShipsRequest;
+  | AddShipsRequest
+  | AttackRequest;
 
 export type RegistrationDataRequest = {
   name: string;
@@ -25,6 +26,13 @@ export type AddShipsRequest = {
   gameId: number;
   ships: Ship[];
   indexPlayer: number;
+};
+
+export type AttackRequest = {
+  gameId: number;
+  indexPlayer: number;
+  x: number;
+  y: number;
 };
 
 export type DataItem = {
@@ -52,6 +60,19 @@ export type StartGameDataResponse = {
   ships: Ship[];
 };
 
+export type NextTurnGameDataResponse = {
+  currentPlayer: number;
+};
+
+export type AttackGameDataResponse = {
+  currentPlayer: number;
+  status: AttackStatus;
+  position: {
+    x: number;
+    y: number;
+  };
+};
+
 // type AddUserToRoomRequestString = {
 //   indexRoom: number;
 // };
@@ -65,8 +86,9 @@ export type WebSocketDataResponse =
   | UpdateRoomDataResponse
   | UpdateWinnersDataResponse
   | CreateGameDataResponse
-  | StartGameDataResponse;
-
+  | StartGameDataResponse
+  | NextTurnGameDataResponse
+  | AttackGameDataResponse;
 //Type guard
 export const isErrorType = (error: unknown): error is Error =>
   error instanceof Error;
@@ -105,12 +127,22 @@ export type Game = {
   gameId: number;
   boards: Board[];
   isAllShipsAdded: [boolean, boolean];
+  currentPlayerIndex: number;
 };
 
 export type Board = {
   indexPlayer: number;
   ships: Ship[];
+  enemyField: Field;
 };
+
+export type AttackStatus = "miss" | "killed" | "shot";
+
+export enum AttackStatusEnum {
+  MISS = "miss",
+  KILLED = "killed",
+  SHOT = "shot",
+}
 
 export type Ship = {
   position: {
@@ -121,6 +153,8 @@ export type Ship = {
   length: number;
   type: "small" | "medium" | "large" | "huge";
 };
+
+export type Field = number[][];
 
 export type Players = Player[];
 export type Rooms = Room[];

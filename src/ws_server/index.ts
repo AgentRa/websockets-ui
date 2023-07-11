@@ -8,6 +8,11 @@ import {
   DataRequest,
   AddUserToRoomRequest,
   AddShipsRequest,
+  Ship,
+  Field,
+  AttackRequest,
+  AttackStatus,
+  AttackStatusEnum,
 } from "../types";
 import { store } from "../store/store";
 import { messageCreator } from "../utils";
@@ -43,6 +48,9 @@ wsServer.on("connection", (ws: WebSocketConnection) => {
         case WebSocketMessageType.ADD_SHIPS:
           handleAddShips(request as AddShipsRequest);
           break;
+        case WebSocketMessageType.ATTACK:
+          handleAttack(request as AttackRequest);
+          break;
         // case WebSocketMessageType.CREATE_GAME:
         //   break;
         // case WebSocketMessageType.UPDATE_WINNERS:
@@ -64,8 +72,6 @@ wsServer.on("connection", (ws: WebSocketConnection) => {
         //   }
         //   break;
         // case WebSocketMessageType.START_GAME:
-        //   break;
-        // case WebSocketMessageType.ATTACK:
         //   break;
         // case WebSocketMessageType.RANDOM_ATTACK:
         //   break;
@@ -160,6 +166,8 @@ const handleAddShips = (request: AddShipsRequest) => {
       board.ships = ships;
       game.isAllShipsAdded.shift();
       game.isAllShipsAdded.push(true);
+    } else {
+      board.enemyField = createEnemyFieldBasedOnShips(ships);
     }
   });
 
@@ -167,14 +175,144 @@ const handleAddShips = (request: AddShipsRequest) => {
 
   if (readyToStart) {
     game.boards.map((board) => {
-      const message: string = messageCreator({
+      const startGameMessage: string = messageCreator({
         type: WebSocketMessageType.START_GAME,
         data: {
           ships: board.ships,
           currentPlayerIndex: board.indexPlayer,
         },
       });
-      connections[board.indexPlayer].send(message);
+
+      game.currentPlayerIndex = indexPlayer;
+
+      const turnMessage: string = messageCreator({
+        type: WebSocketMessageType.TURN,
+        data: {
+          currentPlayer: indexPlayer,
+        },
+      });
+      connections[board.indexPlayer].send(startGameMessage);
+      connections[board.indexPlayer].send(turnMessage);
     });
   }
+};
+
+const handleAttack = (request: AttackRequest) => {
+  const { gameId, indexPlayer, x, y } = request;
+  const game = store.gameById(gameId);
+  if (!game) throw new Error("Game not found");
+  if (game.currentPlayerIndex !== indexPlayer) throw new Error("Not your turn");
+
+  let attackResult: AttackStatus = AttackStatusEnum.MISS;
+  let opponentIndex: number;
+
+  game.boards.map((board) => {
+    if (board.indexPlayer !== indexPlayer) opponentIndex = board.indexPlayer;
+    if (board.indexPlayer === indexPlayer) {
+      if (board.enemyField[y][x] === -1 || board.enemyField[y][x] === -2)
+        throw new Error("Already checked this cell");
+
+      if (board.enemyField[y][x] === 1) {
+        board.enemyField[y][x] = -1;
+        // Check if the ship is completely destroyed
+        const shipLength = getShipLength(board.enemyField, x, y);
+        const isDestroyed = isShipDestroyed(board.enemyField, x, y, shipLength);
+        attackResult = isDestroyed
+          ? AttackStatusEnum.KILLED
+          : AttackStatusEnum.SHOT;
+      }
+    }
+  });
+
+  game.boards.map((board) => {
+    const attackResultMessage = messageCreator({
+      type: WebSocketMessageType.ATTACK,
+      data: {
+        currentPlayer: indexPlayer,
+        status: attackResult,
+        position: { x, y },
+      },
+    });
+
+    if (attackResult === AttackStatusEnum.MISS) {
+      if (board.indexPlayer === indexPlayer) board.enemyField[y][x] = -2;
+
+      game.currentPlayerIndex = opponentIndex;
+    } else {
+      game.currentPlayerIndex = indexPlayer;
+    }
+
+    const turnMessage: string = messageCreator({
+      type: WebSocketMessageType.TURN,
+      data: {
+        currentPlayer: game.currentPlayerIndex,
+      },
+    });
+    connections[board.indexPlayer].send(attackResultMessage);
+    connections[board.indexPlayer].send(turnMessage);
+  });
+};
+
+const createEnemyFieldBasedOnShips = (ships: Ship[]): Field => {
+  const field: Field = createField();
+  ships.map((ship) => {
+    const {
+      position: { x, y },
+      direction: vertical,
+      length,
+    } = ship;
+    if (vertical) {
+      for (let i = 0; i < length; i++) {
+        field[y + i][x] = 1;
+      }
+    } else {
+      for (let i = 0; i < length; i++) {
+        field[y][x + i] = 1;
+      }
+    }
+  });
+  return [...field];
+};
+
+const createField = (): Field => {
+  const field: Field = [];
+  for (let i = 0; i < 10; i++) {
+    field[i] = [];
+    for (let j = 0; j < 10; j++) {
+      field[i][j] = 0;
+    }
+  }
+  return field;
+};
+
+const isShipDestroyed = (
+  field: Field,
+  x: number,
+  y: number,
+  length: number
+): boolean => {
+  for (let i = 0; i < length; i++) {
+    if (field[y][x + i] !== -1 && field[y + i][x] !== -1) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const getShipLength = (field: Field, x: number, y: number): number => {
+  let length = 1;
+  for (let i = x - 1; i >= 0 && field[y][i] === 1; i--) {
+    length++;
+  }
+  for (let i = x + 1; i < 10 && field[y][i] === 1; i++) {
+    length++;
+  }
+  for (let i = y - 1; i >= 0 && field[i][x] === 1; i--) {
+    length++;
+  }
+  for (let i = y + 1; i < 10 && field[i][x] === 1; i++) {
+    length++;
+  }
+
+  return length;
 };

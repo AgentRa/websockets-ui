@@ -73,9 +73,11 @@ class Store {
         ({ index }: Player): Board => ({
           indexPlayer: index,
           ships: [],
+          enemyField: [],
         })
       ),
       isAllShipsAdded: [false, false],
+      currentPlayerIndex: 0,
     });
 
     return this._games[this._games.length - 1];
