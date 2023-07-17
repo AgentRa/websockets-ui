@@ -11,7 +11,8 @@ export type DataRequest =
   | CreateRoomRequest
   | AddUserToRoomRequest
   | AddShipsRequest
-  | AttackRequest;
+  | AttackRequest
+  | RandomAttackRequest;
 
 export type RegistrationDataRequest = {
   name: string;
@@ -34,6 +35,8 @@ export type AttackRequest = {
   x: number;
   y: number;
 };
+
+export type RandomAttackRequest = Omit<AttackRequest, "x" | "y">;
 
 export type DataItem = {
   type: WebSocketMessageType;
@@ -73,13 +76,10 @@ export type AttackGameDataResponse = {
   };
 };
 
-// type AddUserToRoomRequestString = {
-//   indexRoom: number;
-// };
+export type FinishGameDataResponse = {
+  winPlayer: number;
+};
 
-export type WebSocketDataRequest = RegistrationDataRequest | CreateRoomRequest;
-// | CreateRoomRequestString
-// | AddUserToRoomRequestString;
 export type WebSocketDataResponse =
   | RegistrationDataResponse
   | CreateRoomDataResponse
@@ -88,10 +88,8 @@ export type WebSocketDataResponse =
   | CreateGameDataResponse
   | StartGameDataResponse
   | NextTurnGameDataResponse
-  | AttackGameDataResponse;
-//Type guard
-export const isErrorType = (error: unknown): error is Error =>
-  error instanceof Error;
+  | AttackGameDataResponse
+  | FinishGameDataResponse;
 
 export const enum WebSocketMessageType {
   REGISTRATION = "reg",
@@ -103,7 +101,7 @@ export const enum WebSocketMessageType {
   ADD_SHIPS = "add_ships",
   START_GAME = "start_game",
   ATTACK = "attack",
-  RANDOM_ATTACK = "random_attack",
+  RANDOM_ATTACK = "randomAttack",
   TURN = "turn",
   FINISH = "finish",
 }
@@ -130,9 +128,16 @@ export type Game = {
   currentPlayerIndex: number;
 };
 
+export type ShipAttributes = {
+  length: number;
+  isHorizontal: boolean;
+  startingPosition: Position;
+};
+
 export type Board = {
   indexPlayer: number;
   ships: Ship[];
+  enemyShips: ShipInfo[];
   enemyField: Field;
 };
 
@@ -145,16 +150,24 @@ export enum AttackStatusEnum {
 }
 
 export type Ship = {
-  position: {
-    x: number;
-    y: number;
-  };
+  position: Position;
   direction: boolean;
   length: number;
   type: "small" | "medium" | "large" | "huge";
 };
 
-export type Field = number[][];
+export type ShipInfo = {
+  coordinates: Position[];
+  damagedCoordinates: Position[];
+  aroundCoordinates: Position[];
+};
+
+export type Position = {
+  x: number;
+  y: number;
+};
+
+export type Field = boolean[][];
 
 export type Players = Player[];
 export type Rooms = Room[];

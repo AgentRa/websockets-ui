@@ -4,6 +4,7 @@ import {
   Player,
   RegistrationDataResponse,
   Room,
+  WebSocketConnection,
   Winner,
 } from "../types";
 
@@ -12,12 +13,14 @@ class Store {
   private readonly _rooms: Room[];
   private readonly _winners: Winner[];
   private readonly _games: Game[];
+  private readonly _connections: WebSocketConnection[];
 
   constructor() {
     this._players = [];
     this._rooms = [];
     this._winners = [];
     this._games = [];
+    this._connections = [];
   }
 
   registerPlayer(name: string, index: number): RegistrationDataResponse {
@@ -62,6 +65,10 @@ class Store {
     room.roomUsers.push({ name, index });
   }
 
+  deleteRoom(roomId: number): void {
+    this._rooms.filter((r) => r.roomId !== roomId);
+  }
+
   createGame(roomId: number): Game {
     const room = this._rooms.find((r) => r.roomId === roomId);
 
@@ -73,7 +80,8 @@ class Store {
         ({ index }: Player): Board => ({
           indexPlayer: index,
           ships: [],
-          enemyField: [],
+          enemyShips: [],
+          enemyField: Array.from({ length: 10 }, () => Array(10).fill(true)),
         })
       ),
       isAllShipsAdded: [false, false],
@@ -83,12 +91,20 @@ class Store {
     return this._games[this._games.length - 1];
   }
 
+  removePlayer(index: number): void {
+    const playerIndex = this._players.findIndex((p) => p.index === index);
+    if (playerIndex === -1) throw new Error("Player not found");
+
+    this._players.splice(playerIndex, 1);
+  }
+
   get players(): Player[] {
     return this._players;
   }
 
-  get rooms(): Room[] {
-    return this._rooms;
+  get playerById(): (playerId: number) => Player | undefined {
+    return (playerId: number) =>
+      this._players.find((p) => p.index === playerId);
   }
 
   get roomById(): (roomId: number) => Room | undefined {
@@ -105,6 +121,32 @@ class Store {
 
   get winners(): Winner[] {
     return this._winners;
+  }
+  set winner(player: Player) {
+    const winnerIndex = this._winners.findIndex((w) => w.name === player.name);
+    if (winnerIndex === -1) {
+      this._winners.push({ name: player.name, wins: 1 });
+    } else {
+      this._winners[winnerIndex].wins += 1;
+    }
+  }
+
+  get connections(): WebSocketConnection[] {
+    return this._connections;
+  }
+
+  removeConnection(index: number): void {
+    const connectionIndex = this._connections.findIndex(
+      (c) => c.index === index
+    );
+    if (connectionIndex === -1) throw new Error("Connection not found");
+
+    this._connections.splice(connectionIndex, 1);
+  }
+
+  addConnection(connection: WebSocketConnection): void {
+    connection.index = store.connections.length;
+    this._connections.push(connection);
   }
 }
 

@@ -1,4 +1,4 @@
-import { DataItem } from "../types";
+import { DataItem, WebSocketConnection } from "../types";
 
 export function messageCreator(dataList: DataItem): string;
 export function messageCreator(dataList: DataItem[]): string[];
@@ -17,3 +17,13 @@ export function messageCreator(
     id: 0,
   });
 }
+
+export const responseForAll = (
+  messages: string[],
+  connections: WebSocketConnection[]
+) => {
+  connections.map((socket) => messages.map((message) => socket.send(message)));
+};
+
+export const isErrorType = (error: unknown): error is Error =>
+  error instanceof Error;
