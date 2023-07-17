@@ -98,6 +98,15 @@ class Store {
     this._players.splice(playerIndex, 1);
   }
 
+  removeRoom(index: number): void {
+    const roomIndex = this._rooms.findIndex((room) =>
+      room.roomUsers.find((p) => p.index === index)
+    );
+    if (roomIndex === -1) throw new Error("Room not found");
+
+    this._rooms.splice(roomIndex, 1);
+  }
+
   get players(): Player[] {
     return this._players;
   }
@@ -122,7 +131,7 @@ class Store {
   get winners(): Winner[] {
     return this._winners;
   }
-  set winner(player: Player) {
+  addWinner(player: Player) {
     const winnerIndex = this._winners.findIndex((w) => w.name === player.name);
     if (winnerIndex === -1) {
       this._winners.push({ name: player.name, wins: 1 });

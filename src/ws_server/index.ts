@@ -12,13 +12,11 @@ import {
 } from "../types";
 import { store } from "../store/store";
 import * as handle from "../game_logic/handle";
-import { isErrorType } from "../utils";
+import { isErrorType, messageCreator, responseForAll } from "../utils";
 
 export const wsServer = new WebSocketServer({ port: 3000 });
 
 wsServer.on("connection", (ws: WebSocketConnection) => {
-  store.addConnection(ws);
-
   ws.on("message", (message: string) => {
     try {
       const data: WebSocketMessageRequest = JSON.parse(message);
@@ -56,8 +54,24 @@ wsServer.on("connection", (ws: WebSocketConnection) => {
   });
 
   ws.on("close", () => {
-    store.removeConnection(ws.index);
-    store.removePlayer(ws.index);
-    console.log(`Client ${ws.name ?? ""} disconnected`);
+    try {
+      store.removeRoom(ws.index);
+      store.removeConnection(ws.index);
+      store.removePlayer(ws.index);
+
+      const updateRoomMessage = messageCreator([
+        {
+          type: WebSocketMessageType.UPDATE_ROOM,
+          data: store.availableRooms,
+        },
+      ]);
+
+      responseForAll(updateRoomMessage, store.connections);
+
+      console.log(`Client ${ws.name ?? ""} ${ws.index} disconnected`);
+    } catch (error: unknown) {
+      if (isErrorType(error)) console.error(error.message);
+      else console.error(error);
+    }
   });
 });

@@ -20,8 +20,10 @@ const registration = (
   request: RegistrationDataRequest,
   ws: WebSocketConnection
 ): void => {
-  const response = store.registerPlayer(request.name, ws.index);
+  store.addConnection(ws);
   ws.name = request.name;
+
+  const response = store.registerPlayer(request.name, ws.index);
 
   const registrationResponseMessage: string = messageCreator({
     type: WebSocketMessageType.REGISTRATION,
@@ -273,6 +275,9 @@ const attack = (request: AttackRequest | RandomAttackRequest): void => {
     store.connections[board.indexPlayer].send(attackResultMessage);
 
     if (shipToRemove) {
+      shipToRemove.aroundCoordinates.map(
+        ({ x, y }) => (board.enemyField[y][x] = false)
+      );
       shipToRemove.aroundCoordinates.map((position) => {
         const messageStateAroundShip: string = messageCreator({
           type: WebSocketMessageType.ATTACK,
@@ -288,12 +293,22 @@ const attack = (request: AttackRequest | RandomAttackRequest): void => {
 
     store.connections[board.indexPlayer].send(turnMessage);
     if (finishMessage) {
-      store.connections[board.indexPlayer].send(finishMessage);
       const player = store.playerById(indexPlayer);
+      if (!player) throw new Error("Player not found");
+
       if (player && board.indexPlayer === indexPlayer) {
         store.deleteRoom(indexPlayer);
-        store.winner = player;
+        store.addWinner(player);
       }
+      const winnersMessage = messageCreator([
+        {
+          type: WebSocketMessageType.UPDATE_WINNERS,
+          data: store.winners,
+        },
+      ]);
+
+      store.connections[board.indexPlayer].send(finishMessage);
+      responseForAll(winnersMessage, store.connections);
     }
   });
 };
